@@ -15,7 +15,7 @@ StudyFlow is a Django-based web application that helps users learn and track the
 1. Clone the repository:
 
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/rahuls465/StudyFlow.git
    cd StudyFlow
    ```
 2. Create and activate a virtual environment:
