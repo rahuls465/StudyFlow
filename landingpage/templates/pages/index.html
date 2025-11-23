@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LMS Academy - Progress Tracking</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    /* Sidebar Styles */
+    #sidebar { min-height: 100vh; background-color: #212529; transition: all 0.3s; }
+    #sidebar .nav-link { color: rgba(255,255,255,0.8); margin-bottom: 8px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+    #sidebar .nav-link:hover { background-color: #343a40; color: #fff; padding-left: 20px; transition: 0.2s; }
+    #sidebar .nav-link.active { background-color: #0d6efd; color: #fff; }
+    
+    /* Sidebar User Info */
+    .sidebar-user { padding: 20px; border-bottom: 1px solid #495057; margin-bottom: 20px; text-align: center; }
+    .sidebar-avatar { width: 60px; height: 60px; background: #0d6efd; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white; }
+    
+    /* Card Styles */
+    .course-card { border: none; border-radius: 12px; transition: transform 0.3s, box-shadow 0.3s; overflow: hidden; }
+    .course-card:hover { transform: translateY(-8px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); }
+    .course-header { height: 100px; background: linear-gradient(45deg, #0d6efd, #0dcaf0); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; }
+    
+    /* Profile Specific Styles */
+    .profile-header-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px; padding: 40px; margin-bottom: 30px; }
+    .profile-avatar-lg { width: 100px; height: 100px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 50px; border: 4px solid rgba(255,255,255,0.5); }
+    
+    /* Lesson & Quiz Styles */
+    .lesson-item { cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
+    .lesson-item:hover { background-color: #e9ecef; border-left-color: #0d6efd; }
+    .lesson-item.completed { border-left-color: #198754; background-color: #f8fff9; } /* Green border for completed */
+    
+    .quiz-option { cursor: pointer; transition: 0.2s; border: 2px solid #dee2e6; }
+    .quiz-option:hover { border-color: #0d6efd; background-color: #f8f9fa; }
+    
+    /* Animations */
+    .fade-in { animation: fadeIn 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Auth Toggle Link */
+    .auth-link { cursor: pointer; color: #0d6efd; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="container" id="signin-page">
+    <div class="row justify-content-center align-items-center" style="height: 100vh;">
+        <div class="col-md-4">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-body p-5 text-center">
+                    <div class="mb-4 text-primary" style="font-size: 50px;">🎓</div>
+                    <h2 class="mb-2 fw-bold text-primary" id="auth-title">Welcome Back</h2>
+                    <p class="text-muted mb-4" id="auth-subtitle">Login to continue learning</p>
+                    <div id="auth-error" class="alert alert-danger p-2 small" style="display:none;"></div>
+                    <input type="text" id="auth-username" class="form-control form-control-lg mb-3" placeholder="Username">
+                    <div id="signup-fields" style="display:none;">
+                        <input type="text" id="auth-fullname" class="form-control form-control-lg mb-3" placeholder="Full Name">
+                    </div>
+                    <input type="password" id="auth-password" class="form-control form-control-lg mb-4" placeholder="Password">
+                    <button class="btn btn-primary btn-lg w-100 rounded-pill mb-3" id="auth-btn" onclick="handleLogin()">Sign In</button>
+                    <p class="small text-muted">
+                        <span id="auth-toggle-text">Don't have an account?</span> 
+                        <span class="auth-link fw-bold" onclick="toggleAuthMode()">Sign Up</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid" id="dashboard" style="display:none;">
+    <div class="row">
+        <div class="col-md-2 p-3 d-flex flex-column" id="sidebar">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar" id="mini-avatar">👤</div>
+                <div class="text-white fw-bold" id="mini-username">User</div>
+                <small class="text-white-50">Student</small>
+            </div>
+            <a class="nav-link" id="nav-courses" onclick="renderCourses()">📚 Courses</a>
+            <a class="nav-link" id="nav-quizzes" onclick="renderQuizList()">❓ Quizzes</a>
+            <a class="nav-link" id="nav-progress" onclick="renderProgress()">📊 Progress</a>
+            <a class="nav-link" id="nav-profile" onclick="renderProfile()">👤 My Profile</a>
+            <div class="mt-auto">
+                <hr class="text-white">
+                <a class="nav-link text-danger" onclick="logout()">🚪 Sign Out</a>
+            </div>
+        </div>
+
+        <div class="col-md-10 p-4 bg-light" style="height: 100vh; overflow-y: auto;">
+            <div id="search-container" class="d-none mb-4">
+                <input type="text" id="course-search" class="form-control form-control-lg shadow-sm" placeholder="🔍 Search for a course..." onkeyup="filterCourses()">
+            </div>
+            <div id="content" class="fade-in"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* ================= DATA STORE ================= */
+const courses = [
+    { id: 1, title: "HTML5 Mastery", category: "Frontend", color: "#E44D26", description: "Learn the skeleton of the web. Master semantic HTML, forms, and SEO structure.", lessons: [ {id: 1, title: "Intro to DOM", content: "The Document Object Model (DOM) treats an XML or HTML document as a tree structure."}, {id: 2, title: "Semantic Tags", content: "Use <header>, <nav>, <article> instead of just <div> for better accessibility."}, {id: 3, title: "Forms & Inputs", content: "Learn about input types, labels, and form validation."} ] },
+    { id: 2, title: "CSS3 Modern Styling", category: "Frontend", color: "#1572B6", description: "Create beautiful responsive layouts using Flexbox, Grid, and Animations.", lessons: [ {id: 1, title: "Flexbox Guide", content: "Flexbox is a one-dimensional layout method for laying out items in rows or columns."}, {id: 2, title: "CSS Grid", content: "CSS Grid Layout excels at dividing a page into major regions."}, {id: 3, title: "Transitions", content: "Animate changes to CSS properties smoothly."} ] },
+    { id: 3, title: "JavaScript Essentials", category: "Programming", color: "#F7DF1E", description: "The language of the web. Learn logic, DOM manipulation, and ES6 features.", lessons: [ {id: 1, title: "ES6 Arrow Functions", content: "Arrow functions allow for a shorter syntax: const add = (a, b) => a + b;"}, {id: 2, title: "Async/Await", content: "Async/await makes promises easier to write."}, {id: 3, title: "Fetch API", content: "Get data from servers using the modern Fetch API."} ] },
+    { id: 4, title: "Python for Beginners", category: "Backend", color: "#3776AB", description: "A versatile language used for web dev, data science, and automation.", lessons: [ {id: 1, title: "Python Syntax", content: "Python uses indentation to indicate a block of code."}, {id: 2, title: "Lists & Dicts", content: "Lists are ordered collections. Dictionaries are key-value pairs."} ] },
+    { id: 5, title: "SQL Database Design", category: "Data", color: "#003B57", description: "Learn to store, manipulate, and retrieve data using Structured Query Language.", lessons: [ {id: 1, title: "SELECT Queries", content: "SELECT * FROM users; retrieves data."}, {id: 2, title: "Joins", content: "INNER JOIN combines rows from two or more tables."} ] },
+    { id: 6, title: "React.js Fundamentals", category: "Frontend", color: "#61DAFB", description: "Build dynamic user interfaces with components, hooks, and state management.", lessons: [ {id: 1, title: "Components", content: "React apps are made of independent, reusable pieces called components."}, {id: 2, title: "UseState Hook", content: "useState allows you to add state to functional components."} ] }
+];
+
+const quizzes = [
+    { id: 1, title: "General Web Quiz", questions: [ {q: "Which is NOT a programming language?", options: ["Python", "HTML", "Java", "C++"], answer: 1}, {q: "What does CSS stand for?", options: ["Creative Style Sheets", "Cascading Style Sheets", "Computer Style System"], answer: 1} ] },
+    { id: 2, title: "JavaScript Logic", questions: [ {q: "What is the output of 2 + '2'?", options: ["4", "22", "NaN", "Error"], answer: 1}, {q: "Which keyword defines a constant?", options: ["let", "var", "const"], answer: 2} ] }
+];
+
+/* ================= AUTHENTICATION LOGIC ================= */
+let currentUser = null;
+let isLoginMode = true;
+
+function toggleAuthMode() {
+    isLoginMode = !isLoginMode;
+    const title = document.getElementById("auth-title");
+    const subtitle = document.getElementById("auth-subtitle");
+    const btn = document.getElementById("auth-btn");
+    const toggleText = document.getElementById("auth-toggle-text");
+    const signupFields = document.getElementById("signup-fields");
+    document.getElementById("auth-error").style.display = "none";
+
+    if(isLoginMode) {
+        title.innerText = "Welcome Back";
+        subtitle.innerText = "Login to continue learning";
+        btn.innerText = "Sign In";
+        btn.onclick = handleLogin;
+        toggleText.innerText = "Don't have an account?";
+        toggleText.nextElementSibling.innerText = "Sign Up";
+        signupFields.style.display = "none";
+    } else {
+        title.innerText = "Create Account";
+        subtitle.innerText = "Start your learning journey today";
+        btn.innerText = "Sign Up";
+        btn.onclick = handleRegister;
+        toggleText.innerText = "Already have an account?";
+        toggleText.nextElementSibling.innerText = "Sign In";
+        signupFields.style.display = "block";
+    }
+}
+
+async function handleRegister() {
+    const u = document.getElementById("auth-username").value.trim();
+    const p = document.getElementById("auth-password").value.trim();
+    const n = document.getElementById("auth-fullname").value.trim();
+
+    const res = await fetch("/api/register/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: u, password: p, fullname: n }),
+        credentials: "include" 
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+        alert("Account created successfully!");
+        toggleAuthMode();
+    } else showError(data.error);
+}
+
+async function handleLogin() {
+    const u = document.getElementById("auth-username").value.trim();
+    const p = document.getElementById("auth-password").value.trim();
+
+    const res = await fetch("/api/login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: u, password: p }),
+        credentials: "include"
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+        localStorage.setItem("lms_current_user", u);
+        currentUser = { username: u, fullName: data.fullname, avatar: "👤" };
+        showDash();
+    } else showError(data.error);
+}
+
+
+function showError(msg) {
+    const errorBox = document.getElementById("auth-error");
+    errorBox.innerText = msg;
+    errorBox.style.display = "block";
+}
+
+async function logout() {
+    await fetch("/api/logout/", { 
+        method: "POST",
+        credentials: "include" 
+    });
+    localStorage.removeItem("lms_current_user");
+    location.reload();
+}
+
+
+async function showDash() {
+    // Ask Django if the user session is still active
+    const res = await fetch("/api/session/", { credentials: "include" });  // ✅
+    const data = await res.json();
+
+    if (!res.ok || !data.logged_in) return showLogin();
+
+    currentUser = { username: data.username, fullName: data.full_name, avatar: "👤", bio: "Student" };
+    localStorage.setItem("lms_current_user", data.username);
+
+    document.getElementById("mini-username").innerText = currentUser.fullName;
+    document.getElementById("mini-avatar").innerText = currentUser.avatar;
+    document.getElementById("signin-page").style.display = "none";
+    document.getElementById("dashboard").style.display = "flex";
+    renderCourses();
+}
+
+function showLogin() { document.getElementById("signin-page").style.display = "block"; document.getElementById("dashboard").style.display = "none"; }
+if(localStorage.getItem("lms_current_user")) showDash();
+
+function setActive(id) {
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    const el = document.getElementById(id);
+    if(el) el.classList.add('active');
+    document.getElementById('search-container').className = (id === 'nav-courses') ? 'd-block mb-4' : 'd-none';
+}
+
+
+function getIcon(cat) { return cat==='Frontend' ? '🎨' : cat==='Backend' ? '⚙️' : cat==='Data' ? '💾' : '💻'; }
+function filterCourses() { renderCourses(document.getElementById('course-search').value); }
+
+async function openCourse(id) {
+    const c = courses.find(x => x.id === id);
+    
+    // FETCH PROGRESS FOR SYLLABUS CHECKMARKS
+    const res = await fetch("/api/progress/get/", { credentials: "include" });
+    const userProgress = res.ok ? await res.json() : {};
+    const completedIds = userProgress[c.id] || [];
+
+    let html = `
+        <button class="btn btn-link text-decoration-none mb-3 ps-0" onclick="renderCourses()">← Back to Courses</button>
+        <div class="card border-0 shadow-sm mb-4"><div class="card-body p-4"><h2 class="fw-bold text-primary">${c.title}</h2><p class="lead">${c.description}</p></div></div>
+        <h4 class="mb-3">Course Syllabus</h4><div class="list-group">`;
+    
+    c.lessons.forEach(l => {
+        // CHECK IF LESSON IS DONE
+        const isDone = completedIds.includes(l.id);
+        
+        html += `
+            <div class="list-group-item list-group-item-action p-4 lesson-item ${isDone ? 'completed' : ''}" onclick="openLesson(${c.id}, ${l.id})">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">
+                            ${isDone ? '✅ ' : '📄 '} ${l.title}
+                        </h5>
+                    </div>
+                    <small class="text-muted">${isDone ? 'Completed' : 'Click to read'}</small>
+                </div>
+            </div>`;
+    });
+    html += '</div>';
+    document.getElementById("content").innerHTML = html;
+}
+
+function openLesson(cid, lid) {
+    const c = courses.find(x => x.id === cid);
+    const l = c.lessons.find(x => x.id === lid);
+    
+    // SAVE PROGRESS IMMEDIATELY WHEN OPENING
+    saveProgress(cid, lid);
+    
+    document.getElementById("content").innerHTML = `
+        <button class="btn btn-link text-decoration-none mb-3 ps-0" onclick="openCourse(${cid})">← Back to ${c.title}</button>
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-white p-4 border-bottom-0">
+                <div class="d-flex justify-content-between">
+                    <span class="badge bg-primary mb-2">Lesson</span>
+                    <span class="text-success fw-bold">✅ Progress Saved</span>
+                </div>
+                <h2 class="fw-bold">${l.title}</h2>
+            </div>
+            <div class="card-body p-5 bg-light">
+                <p class="fs-5" style="line-height: 1.8;">${l.content}</p>
+            </div>
+            <div class="card-footer bg-white p-4 text-end">
+                <button class="btn btn-success btn-lg" onclick="openCourse(${cid})">Return to Course Menu</button>
+            </div>
+        </div>
+    `;
+}
+
+/* ================= GLOBAL HELPERS ================= */
+async function saveProgress(cid, lid) {
+    await fetch("/api/progress/save/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ course_id: cid, lesson_id: lid }),
+        credentials: "include"
+        
+    });
+    if (res.ok) {
+            // Optionally update local storage or UI
+            await renderCourses();
+        }
+}
+
+async function renderCourses(filterText = "") {
+    const res = await fetch("/api/progress/get/", { credentials: "include" });
+    const userProgress = res.ok ? await res.json() : {};
+
+    setActive('nav-courses');
+    const content = document.getElementById("content");
+    const filtered = courses.filter(c => c.title.toLowerCase().includes(filterText.toLowerCase()));
+
+    if(filtered.length === 0) {
+        content.innerHTML = `<div class="text-center mt-5"><h3>😕 No courses found</h3></div>`;
+        return;
+    }
+
+    let html = '<div class="row g-4">';
+    filtered.forEach(c => {
+        const completedLessons = userProgress[c.id]?.length || 0;
+        const totalLessons = c.lessons.length;
+        const percent = Math.round((completedLessons / totalLessons) * 100);
+        const hasStarted = completedLessons > 0;
+        const isCompleted = percent === 100;
+
+        html += `
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card course-card h-100 shadow-sm">
+                <div class="course-header" style="background: ${c.color}">
+                    <span style="font-size: 40px;">${getIcon(c.category)}</span>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-secondary">${c.category}</span>
+                        ${isCompleted ? '<span class="badge bg-success">Completed</span>' : ''}
+                    </div>
+                    <h5 class="card-title fw-bold">${c.title}</h5>
+                    <p class="card-text text-muted flex-grow-1">${c.description}</p>
+                    
+                    <div class="mt-3 mb-2">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Progress</span>
+                            <span>${percent}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+
+                    <button class="btn ${hasStarted ? 'btn-success' : 'btn-outline-primary'} w-100 mt-2" onclick="openCourse(${c.id})">
+                        ${hasStarted ? 'Continue Learning' : 'Start Learning'}
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    });
+    html += '</div>';
+    content.innerHTML = html;
+}
+async function renderProgress() {
+    setActive('nav-progress');
+
+    // ✅ Fetch progress from Django instead of localStorage
+    const res = await fetch("/api/progress/get/", { credentials: "include" });
+    const p = res.ok ? await res.json() : {};
+
+    let html = '<h2 class="mb-4">Your Learning Dashboard</h2>';
+
+    if (Object.keys(p).length === 0) {
+        html += `<div class="alert alert-info">You haven't started any lessons yet.</div>`;
+    } else {
+        html += '<div class="row">';
+        courses.forEach(c => {
+            if (p[c.id]) {
+                let done = p[c.id].length,
+                    total = c.lessons.length,
+                    pct = Math.round((done / total) * 100);
+                html += `
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm p-3">
+                        <h5>${c.title}</h5>
+                        <div class="progress mt-2" style="height: 25px;">
+                            <div class="progress-bar bg-success" style="width: ${pct}%">${pct}%</div>
+                        </div>
+                        <small class="text-muted mt-2">${done} of ${total} lessons completed</small>
+                    </div>
+                </div>`;
+            }
+        });
+        html += '</div>';
+    }
+
+    document.getElementById("content").innerHTML = html;
+}
+
+
+/* ================= PROFILE & QUIZ (Simplified for brevity) ================= */
+function renderProfile() {
+    setActive('nav-profile');
+    document.getElementById("content").innerHTML = `<div class="profile-header-card shadow fade-in"><div class="d-flex align-items-center"><div class="profile-avatar-lg me-4">${currentUser.avatar}</div><div><h2 class="fw-bold mb-0">${currentUser.fullName}</h2><p class="mb-0 opacity-75">@${currentUser.username}</p></div></div></div>
+    <div class="card shadow-sm border-0 p-4"><h5 class="fw-bold mb-3">Details</h5><p><strong>Name:</strong> ${currentUser.fullName}</p><p><strong>Bio:</strong> ${currentUser.bio}</p></div>`;
+}
+
+function renderQuizList() {
+    setActive('nav-quizzes');
+    let html = '<h2 class="mb-4">Test Your Knowledge</h2><div class="row">';
+    quizzes.forEach(q => { html += `<div class="col-md-6 mb-4"><div class="card shadow-sm text-center h-100"><div class="card-body d-flex flex-column justify-content-center"><h3 class="mb-3">${q.title}</h3><p class="text-muted">${q.questions.length} Questions</p><button class="btn btn-primary rounded-pill px-4" onclick="startQuiz(${q.id})">Start Quiz</button></div></div></div>`; });
+    html += '</div>';
+    document.getElementById("content").innerHTML = html;
+}
+
+function startQuiz(id) {
+    const qz = quizzes.find(x => x.id === id);
+    let idx = 0, score = 0;
+    function renderQ() {
+        if(idx >= qz.questions.length) { document.getElementById("content").innerHTML = `<div class="text-center mt-5 fade-in"><h1>🎉 Quiz Completed!</h1><h3 class="my-4">Score: ${score} / ${qz.questions.length}</h3><button class="btn btn-primary" onclick="renderQuizList()">Back to Quizzes</button></div>`; return; }
+        const q = qz.questions[idx];
+        let h = `<div class="card shadow-lg p-5 fade-in mx-auto" style="max-width: 800px;"><div class="d-flex justify-content-between mb-4"><h4 class="text-muted">${qz.title}</h4><span>Question ${idx+1}/${qz.questions.length}</span></div><h3 class="mb-4">${q.q}</h3><div class="d-grid gap-3">`;
+        q.options.forEach((opt, i) => { h += `<div class="p-3 rounded border quiz-option fw-bold" onclick="check(${i})">${opt}</div>`; });
+        h += `</div></div>`;
+        document.getElementById("content").innerHTML = h;
+    }
+    window.check = function(i) { if(i === qz.questions[idx].answer) score++; idx++; renderQ(); }
+    renderQ();
+}
+</script>
+</body>
+</html>

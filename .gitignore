@@ -1,0 +1,45 @@
+# Python
+
+**pycache**/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Django
+
+/staticfiles/
+/media/
+.env
+
+# Virtual environment
+
+venv/
+ENV/
+.env/
+
+# IDEs and Editors
+
+.vscode/
+.idea/
+.DS_Store
+
+# OS Files
+
+Thumbs.db
+
+# Logs and cache
+
+*.log
+*.pot
+*.py[cod]
+*$py.class
+
+# Migrations cache
+
+*/migrations/**pycache**/
+*/migrations/*.pyc
+
+# Local settings
+
+local_settings.py
